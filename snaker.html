@@ -1,0 +1,303 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>贪吃蛇</title>
+	<style type="text/css">
+		.wrap {
+			position: relative;
+			width: 500px;
+			height: 500px;
+			margin: 20px auto;
+			background-color: #000;
+			overflow: hidden;
+		}
+
+		.round {
+			display: block;
+			position: absolute;
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			background-color: green;
+		}
+
+		.round.head {
+			background-color: red;
+		}
+
+		.food {
+			display: block;
+			position: absolute;
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			background-color: yellow;
+		}
+	</style>
+</head>
+<body>
+	<div class="wrap"></div>
+
+	<script type="text/javascript">
+	    window.onload = function() {
+	    	init();
+	    }
+	    function init() {
+	    	initGame();
+	    }
+	    var initGame = function() {
+	    	var wrap = document.getElementsByClassName('wrap')[0],
+	    		wrapW = parseInt(getStyles(wrap, 'width')),
+	    		wrapH = parseInt(getStyles(wrap, 'height')),
+	    		t = null;
+	    	var Snake = function() {
+	    		this.bodyArr = [
+	    			{x: 0, y: 0},
+	    			{x: 0, y: 20},
+	    			{x: 0, y: 40},
+	    			{x: 0, y: 60},
+	    			{x: 0, y: 80},
+	    			{x: 0, y: 100}
+	    		];
+	    		this.dir = 'DOWN';//设置蛇的运动方向状态
+	    	}
+
+	    	Snake.prototype = {
+	    		init: function() {
+	    			this.bindEvent();
+	    			this.createFood();
+	    			this.initSnake();
+	    			this.run();
+	    		},
+	    		//事件绑定函数
+	    		bindEvent: function() {
+	    			var _self = this;
+	    			addEvent(document, 'keydown', function(){
+	    				_self.changeDir();
+	    			});
+	    		},
+	    		//绘制蛇的函数
+	    		initSnake: function() {
+	    			var arr = this.bodyArr,
+	    				len = arr.length,
+	    				frag = document.createDocumentFragment(),
+	    				item;
+	    			for (var i = 0; i < len; i++) {
+	    				item = arr[i];
+
+	    				var round = document.createElement('i');//创造i标签
+	    				round.className = i === len - 1 ? 'round head' : 'round';
+	    				round.style.left = item.x + 'px';
+	    				round.style.top = item.y + 'px'; 
+	    				frag.appendChild(round);
+	    			}
+	    			wrap.appendChild(frag);
+	    		},
+	    		//设置定时函数，让蛇自动移动
+	    		run: function(){
+	    			var _self = this;
+	    			t = setInterval(function(){
+	    				_self.move();
+	    			}, 500);
+	    		},
+	    		//蛇移动的函数
+	    		move: function() {
+	    			var arr = this.bodyArr,
+	    				len = arr.length,
+	    				head = arr[len - 1];
+	    			for(var i = 0; i < len; i++){
+	    				if(i === len - 1){
+	    					this.setHeadXY(arr);
+	    				}else{
+	    					arr[i].x = arr[i + 1].x;
+	    					arr[i].y = arr[i + 1].y;
+	    				}
+	    			}
+	    			this.eatFood(arr);
+	    			this.removeSnake();
+	    			this.initSnake();
+	    			this.headInBody(arr);
+	    		},
+	    		//设置碰到边界之后的操作
+	    		setHeadXY: function(arr) {
+	    			var head = arr[arr.length - 1];
+	    			switch(this.dir){
+						case 'LEFT':
+							if(head.x <= 0){
+								head.x = wrapW - 20;
+							}else{
+								head.x -= 20;
+							}
+							break;
+						case 'RIGHT':
+							if(head.x >= wrapW - 20){
+								head.x = 0;
+							}else{
+								head.x += 20;
+							}
+							break;
+						case 'UP':
+							if(head.y <= 0){
+								head.y = wrapH - 20;
+							}else{
+								head.y -= 20;
+							}
+							break;
+						case 'DOWN':
+							if(head.y >= wrapH - 20){
+								head.y = 0;
+							}else{
+								head.y += 20;
+							}
+							break;
+						default:
+							break;
+	    			}
+	    		},
+	    		//判断是否碰到自己的身体，如果碰到，游戏结束
+	    		headInBody: function(arr) {
+	    			var headX = arr[arr.length - 1].x,
+	    				headY = arr[arr.length - 1].y,
+	    				item;
+
+	    			for (var i = 0; i < arr.length - 2; i++) {
+	    				item = arr[i];
+
+	    				if(headX === item.x && headY === item.y){
+	    					var _self = this;
+	    					setTimeout(function() {
+	    						alert('游戏结束');
+	    						clearInterval(t);
+	    						_self.removeSnake();
+	    						_self.removeFood();
+	    					}, 100);
+	    				}
+	    			}
+	    		},
+	    		//清除之前的蛇
+	    		removeSnake: function() {
+	    			var bodys = document.getElementsByClassName('round');
+
+	    			while(bodys.length > 0){
+	    				bodys[0].remove();
+	    			}
+	    		},
+	    		//改变蛇的运动方向
+	    		changeDir: function(e) {
+	    			var e = e || window.event,
+	    				code = e.keyCode;
+	    			this.setDir(code);
+	    		},
+	    		//设置蛇的运动方向
+	    		setDir: function(code) {
+	    			switch(code) {
+	    				case 37://左
+	    					if(this.dir !== 'RIGHT'){
+	    						this.dir = 'LEFT';
+	    					}
+	    					break;
+	    				case 39://右
+	    					if(this.Dir !== 'LEFT'){
+	    						this.dir = 'RIGHT';
+	    					}
+	    					break;
+	    				case 38://上
+	    					if(this.Dir !== 'DOWN'){
+	    						this.dir = 'UP';
+	    					}
+	    					break;
+	    				case 40://下
+	    					if(this.dir !== 'UP'){
+	    						this.dir = 'DOWN';
+	    					}
+	    					break;
+	    				default:
+	    					break;
+	    			}
+	    		},
+	    		//创造食物
+	    		createFood: function() {
+	    			var food = document.createElement('i');
+	    			food.className = 'food';
+	    			food.style.left = this.setRandomPos(wrapW) * 20 + 'px';
+	    			food.style.top = this.setRandomPos(wrapH) * 20 + 'px';
+	    			wrap.appendChild(food);
+	    		},
+	    		//创造随机数（传入的值是宽或者高，这样创造出来的随机数，用的时候再乘以20，就不会超出范围了）
+	    		setRandomPos: function(size) {
+	    			return Math.floor(Math.random() * (size / 20));
+	    		},
+	    		//吃食物
+	    		eatFood: function(arr) {
+	    			var food = document.getElementsByClassName('food')[0],
+	    				foodX = parseInt(getStyles(food, 'left')),
+	    				foodY = parseInt(getStyles(food, 'top')),
+	    				headX = arr[arr.length - 1].x,
+	    				headY = arr[arr.length - 1].y,
+	    				x,
+	    				y;
+
+	    			if(headX === foodX && headY === foodY){
+	    				this.removeFood();
+	    				this.createFood();
+
+	    				if(arr[0].x === arr[1].x){//如果最后两个圆的x相同，则说明是上下走向的
+	    					x = arr[0].x;
+	    					if(arr[0].y > arr[1].y){//说明是向上走的
+	    						y = arr[0].y + 20;
+	    					}else if(arr[0].y < arr[1].y){//说明是向下走的
+	    						y = arr[0].y - 20;
+	    					}
+	    				}else if(arr[0].y === arr[1].y){//说明是左右走向的
+	    					y = arr[0].y;
+	    					if(arr[0].x > arr[1].x){//说明是向左走的
+	    						x = arr[0].x + 20;
+	    					}else if(arr[0].x < arr[1].x){//说明是向右走的
+	    						x = arr[0].x - 20;
+	    					}
+	    				}
+
+	    				arr.unshift({x, y});
+	    			}
+	    		},
+	    		//清除食物
+	    		removeFood: function() {
+	    			var food = document.getElementsByClassName('food')[0];
+	    			food.remove();
+	    		}
+	    	}
+
+	    	return new Snake().init();
+	    };
+	    //封装获取样式的兼容函数
+	    function getStyles(elem, prop) {
+			if(window.getComputedStyle){
+				if(prop){
+					return window.getComputedStyle(elem, null)[prop];
+				}else{
+					return window.getComputedStyle(elem, null);
+				}
+			}else{
+				if(prop){
+					return elem.currentStyle[prop];
+				}else{
+					return elem.currentStyle;
+				}
+			}
+		}
+		//封装事件绑定的兼容性函数
+		function addEvent(el, type, fn){
+			if(el.addEventListener){
+				el.addEventListener(type, fn, false);
+			}else if(el.attachEvent){
+				el.attachEvent('on' + type, function() {
+					fn.call(el);
+				});
+			}else{
+				el['on' + type] = fn;
+			}
+		}
+	</script>
+</body>
+</html>
